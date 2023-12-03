@@ -23,6 +23,7 @@ class _CustomEllipsisState extends State<CustomEllipsis> {
   TextPainter textPaint = TextPainter();
   TextPainter? ellipsisPaint;
   int? maxLines;
+  double scaleUp = 0;
 
   @override
   void didUpdateWidget(covariant CustomEllipsis oldWidget) {
@@ -46,6 +47,8 @@ class _CustomEllipsisState extends State<CustomEllipsis> {
       maxLines: maxLines,
       ellipsis: _ellipsis(),
     );
+    scaleUp =
+        2.0 >= widget.scaleUp && widget.scaleUp >= -2.0 ? widget.scaleUp : 0;
     _setEllipsisPainter();
   }
 
@@ -53,14 +56,14 @@ class _CustomEllipsisState extends State<CustomEllipsis> {
     if (widget.ellipsis != null && maxLines != null) {
       TextStyle style =
           widget.ellipsis!.style ?? widget.text.style ?? const TextStyle();
-      double fontSize =
-          2.0 >= widget.scaleUp && widget.scaleUp >= -2.0 ? widget.scaleUp : 0;
+      // double fontSize =
+      //     2.0 >= widget.scaleUp && widget.scaleUp >= -2.0 ? widget.scaleUp : 0;
       ellipsisPaint = TextPainter(
         text: TextSpan(
           text: widget.ellipsis!.data,
           style: style.copyWith(
             color: style.color ?? style.color,
-            fontSize: (textPaint.text!.style!.fontSize ?? 14) + fontSize,
+            fontSize: (textPaint.text!.style!.fontSize ?? 14) + scaleUp,
           ),
         ),
         textDirection: TextDirection.ltr,
@@ -70,16 +73,12 @@ class _CustomEllipsisState extends State<CustomEllipsis> {
 
   String? _ellipsis() {
     if (widget.ellipsis != null && (maxLines != null)) {
-      if (widget.scaleUp > 0 && widget.scaleUp <= 2) {
+      if (scaleUp > 0 && scaleUp <= 2) {
         return " " *
-            (widget.ellipsis!.data!.length * 2 -
-                1 +
-                ((widget.scaleUp ~/ 1) * 2 - 2));
-      } else if (widget.scaleUp < 0 && widget.scaleUp >= -2) {
+            (widget.ellipsis!.data!.length * 2 - 1 + ((scaleUp ~/ 1) * 2 - 2));
+      } else if (scaleUp < 0 && scaleUp >= -2) {
         return " " *
-            (widget.ellipsis!.data!.length * 2 -
-                1 +
-                (widget.scaleUp ~/ 1 + 2 - 2));
+            (widget.ellipsis!.data!.length * 2 - 1 + (scaleUp ~/ 1 + 2 - 2));
       } else {
         return " " * (widget.ellipsis!.data!.length * 2 - 1);
       }
@@ -108,17 +107,30 @@ class _CustomEllipsisState extends State<CustomEllipsis> {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: (TapDownDetails details) =>
-          _onTapDown(details, textPaint, ellipsisPaint),
-      child: CustomPaint(
-        painter: _Painter(
-          textPaint,
-          maxLines,
-          ellipsisPainter: ellipsisPaint,
+    return LayoutBuilder(builder: (
+      BuildContext context,
+      BoxConstraints constraints,
+    ) {
+      return GestureDetector(
+        onTapDown: (TapDownDetails details) =>
+            _onTapDown(details, textPaint, ellipsisPaint),
+        child: Column(
+          children: [
+            CustomPaint(
+              size: Size(constraints.maxWidth, constraints.maxHeight),
+              painter: _Painter(
+                textPaint,
+                maxLines,
+                ellipsisPainter: ellipsisPaint,
+                maxHeight: constraints.maxHeight,
+                textStyle: widget.text.style ?? const TextStyle(),
+                scaleUp: scaleUp,
+              ),
+            ),
+          ],
         ),
-      ),
-    );
+      );
+    });
   }
 }
 
@@ -126,26 +138,77 @@ class _Painter extends CustomPainter {
   final TextPainter textPaint;
   final int? maxLines;
   final TextPainter? ellipsisPainter;
+  final double maxHeight;
+  final TextStyle textStyle;
+  final double scaleUp;
 
   _Painter(
     this.textPaint,
     this.maxLines, {
     required this.ellipsisPainter,
+    required this.maxHeight,
+    required this.textStyle,
+    required this.scaleUp,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    textPaint.layout(minWidth: 0, maxWidth: size.width);
-    textPaint.paint(canvas, const Offset(0, 0));
+    double componentMaxHeight = 0;
+    List<String> components = textPaint.plainText.split("");
+    List<String> ellipsisComponents =
+        ellipsisPainter != null ? ellipsisPainter!.plainText.split("") : [];
+    for (final component in components) {
+      TextPainter sizePainter = TextPainter(
+        text: TextSpan(
+          text: component,
+          style: textStyle,
+        ),
+        textDirection: TextDirection.ltr,
+      );
+      sizePainter.layout(minWidth: 0, maxWidth: size.width);
+      if (componentMaxHeight < sizePainter.height) {
+        componentMaxHeight = sizePainter.height;
+      }
+    }
+    for (final component in ellipsisComponents) {
+      TextPainter sizePainter = TextPainter(
+        text: TextSpan(
+          text: component,
+          style: textStyle.copyWith(
+            fontSize: (textStyle.fontSize ?? 14) + scaleUp,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      );
+      sizePainter.layout(minWidth: 0, maxWidth: size.width);
+      if (componentMaxHeight < sizePainter.height) {
+        componentMaxHeight = sizePainter.height;
+      }
+    }
 
-    if (ellipsisPainter != null &&
-        textPaint.didExceedMaxLines &&
-        maxLines != null) {
-      ellipsisPainter!.layout();
-      ellipsisPainter!.paint(
-          canvas,
-          Offset(size.width - ellipsisPainter!.width,
-              textPaint.height - (ellipsisPainter!.height)));
+    if (componentMaxHeight <= maxHeight) {
+      int componentMaxLines = maxHeight ~/ componentMaxHeight;
+
+      if (maxLines == null) {
+        textPaint.maxLines = componentMaxLines;
+        textPaint.layout(minWidth: 0, maxWidth: size.width);
+      } else {
+        if (componentMaxLines < maxLines!) {
+          textPaint.maxLines = componentMaxLines;
+        }
+        textPaint.layout(minWidth: 0, maxWidth: size.width);
+      }
+
+      textPaint.paint(canvas, const Offset(0, 0));
+      if (ellipsisPainter != null &&
+          textPaint.didExceedMaxLines &&
+          maxLines != null) {
+        ellipsisPainter!.layout();
+        ellipsisPainter!.paint(
+            canvas,
+            Offset(size.width - ellipsisPainter!.width,
+                textPaint.height - (ellipsisPainter!.height)));
+      }
     }
   }
 
