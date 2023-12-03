@@ -56,8 +56,6 @@ class _CustomEllipsisState extends State<CustomEllipsis> {
     if (widget.ellipsis != null && maxLines != null) {
       TextStyle style =
           widget.ellipsis!.style ?? widget.text.style ?? const TextStyle();
-      // double fontSize =
-      //     2.0 >= widget.scaleUp && widget.scaleUp >= -2.0 ? widget.scaleUp : 0;
       ellipsisPaint = TextPainter(
         text: TextSpan(
           text: widget.ellipsis!.data,
@@ -75,12 +73,12 @@ class _CustomEllipsisState extends State<CustomEllipsis> {
     if (widget.ellipsis != null && (maxLines != null)) {
       if (scaleUp > 0 && scaleUp <= 2) {
         return " " *
-            (widget.ellipsis!.data!.length * 2 - 1 + ((scaleUp ~/ 1) * 2 - 2));
+            (widget.ellipsis!.data!.length * 2 - 1 + ((scaleUp ~/ 1) * 2));
       } else if (scaleUp < 0 && scaleUp >= -2) {
         return " " *
-            (widget.ellipsis!.data!.length * 2 - 1 + (scaleUp ~/ 1 + 2 - 2));
+            (widget.ellipsis!.data!.length * 2 - 1 + (scaleUp ~/ 1 + 2 + 1));
       } else {
-        return " " * (widget.ellipsis!.data!.length * 2 - 1);
+        return " " * (widget.ellipsis!.data!.length * 2 + 2);
       }
     } else {
       return null;

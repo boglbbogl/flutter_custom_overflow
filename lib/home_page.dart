@@ -37,17 +37,17 @@ class HomePage extends StatelessWidget {
                 print("onTap");
               },
               ellipsis: Text(
-                "...more",
+                "more",
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
                   color: Colors.red,
                 ),
               ),
-              scaleUp: 2.0,
               maxLines: 2,
+              // scaleUp: -0.0,
               text: TextSpan(
                 text:
-                    "dsalkjdsa  fjk  l slkl 21., 2m,21, 12, 2 1221 k3 l1k2 l 12lkl 1l2 2l121  kl21 l 12ks lj 21 2  12 1 12 21 21 21 21 21  2  112 12 12 3 kal fjk lsl",
+                    "dsa  dsafs    lkjds a  fjk  l slkl 21., 2m,21, 12, 2 1221 k3 l1 k2 l 12lkl 1l2 2l121  kl21 l 12ks lj 21 2  12 1 12 21 21 21 21 21  2  112 12 12 3 k al fjk ls l",
                 style: TextStyle(
                   fontSize: 20,
                   color: Colors.black,
